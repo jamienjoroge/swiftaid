@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">SwiftAid</string>
+    <string name="title_activity_welcome">Map</string>
+    <string name="google_direction_Api">AIzaSyBc5Act2YhzTX-GGJNaoUIdMWu7bqayu-Y</string>
+</resources>
