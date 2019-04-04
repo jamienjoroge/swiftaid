@@ -31,6 +31,7 @@ dependencies {
     implementation 'com.google.android.libraries.places:places:1.1.0'
 
     //add libraries
+    implementation 'de.hdodenhof:circleimageview:3.0.0'
     implementation 'com.squareup.retrofit2:retrofit:2.3.0'
     implementation 'com.squareup.retrofit2:converter-scalars:2.3.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.3.0'
