@@ -63,6 +63,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -91,7 +92,7 @@ public class welcome extends FragmentActivity implements OnMapReadyCallback,
     DatabaseReference drivers;
     GeoFire geoFire;
 
-    Marker mCurrent;
+    Marker mCurrent ;
 
     MaterialAnimatedSwitch location_switch;
     SupportMapFragment mapFragment;
@@ -198,7 +199,7 @@ public class welcome extends FragmentActivity implements OnMapReadyCallback,
                     mCurrent.remove();
                     mMap.clear();
                     handler.removeCallbacks(drawPathRunnable);
-                    Snackbar.make(mapFragment.getView(),"You are offline", Snackbar.LENGTH_SHORT)
+                    Snackbar.make(Objects.requireNonNull(mapFragment.getView()),"You are offline", Snackbar.LENGTH_SHORT)
                             .show();
                 }
             }
@@ -239,11 +240,13 @@ public class welcome extends FragmentActivity implements OnMapReadyCallback,
             }
         });
 
-
-
-        //Geo Fire
-        drivers = FirebaseDatabase.getInstance().getReference("Drivers");
+        //GeoFire
+        drivers = FirebaseDatabase.getInstance().getReference(Common.driver_tbl);
         geoFire = new GeoFire(drivers);
+
+
+
+
         setUpLocation();
 
         mService = Common.getGoogleApi();
@@ -486,7 +489,8 @@ public class welcome extends FragmentActivity implements OnMapReadyCallback,
                 final double longitude = mLastLocation.getLongitude();
 
                 //update location on firebase
-                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(), new GeoLocation(latitude, longitude), new GeoFire.CompletionListener() {
+                geoFire.setLocation(FirebaseAuth.getInstance().getCurrentUser().getUid(), new GeoLocation(latitude, longitude)
+                        , new GeoFire.CompletionListener() {
                     @Override
                     public void onComplete(String key, DatabaseError error) {
                         //adding the marker
