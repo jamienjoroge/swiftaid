@@ -1,31 +1,18 @@
 package com.njoroge.jamie.swiftaid;
 
-import android.animation.ValueAnimator;
-import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdate;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.JointType;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.SquareCap;
+import com.njoroge.jamie.swiftaid.Common.Common;
+import com.njoroge.jamie.swiftaid.Remote.IGoogleApi;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -37,10 +24,14 @@ public class VictimCall extends AppCompatActivity {
 
     MediaPlayer mediaPlayer;
 
+    IGoogleApi mService;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_victim_call);
+
+        mService = Common.getGoogleApi();
 
         //initiate view
         txt_time = (TextView)findViewById(R.id.txt_time);
@@ -67,8 +58,8 @@ public class VictimCall extends AppCompatActivity {
             requestApi = "https://maps.googleapis.com/maps/api/directions/json?"+
                     "mode=driving&"+
                     "transit_routing_preference= less_driving&"+
-                    "origin="+currentPosition.latitude+","+currentPosition.longitude+"&"+
-                    "destination="+destination+"&"+
+                    "origin="+ Common.mLastLocation.getLatitude()+","+Common.mLastLocation.getLongitude()+"&"+
+                    "destination="+lat+","+lng+"&"+
                     "key="+getResources().getString(R.string.google_direction_Api);
 
             Log.d("JAMIE", requestApi);//prints URL for debugging
@@ -78,72 +69,30 @@ public class VictimCall extends AppCompatActivity {
                         public void onResponse(Call<String> call, Response<String> response) {
                             try {
                                 JSONObject jsonObject = new JSONObject(response.body());
-                                JSONArray jsonArray = jsonObject.getJSONArray("routes");
-
-                                JSONObject route = jsonArray.getJSONObject(0);
-                                JSONObject poly = route.getJSONObject("overview_polyline");
-                                String encodedString =  poly.getString("points");
-                                polyLineList = decodePoly(encodedString);
-
-                                //adjusting the bounds
-                                if(!polyLineList.isEmpty()) {
-                                    LatLngBounds.Builder builder = new LatLngBounds.Builder();
-                                    for (LatLng latLng : polyLineList)
-                                        builder.include(latLng);
-                                    LatLngBounds bounds = builder.build();
-                                    CameraUpdate mCameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 2);
-                                    mMap.animateCamera(mCameraUpdate);
-                                }
-
-                                polylineOptions = new PolylineOptions();
-                                polylineOptions.color(Color.GRAY);
-                                polylineOptions.width(5);
-                                polylineOptions.startCap(new SquareCap());
-                                polylineOptions.endCap(new SquareCap());
-                                polylineOptions.jointType(JointType.ROUND);
-                                polylineOptions.addAll(polyLineList);
-                                greyPolyline = mMap.addPolyline(polylineOptions);
 
 
-                                blackPolylineOptions = new PolylineOptions();
-                                blackPolylineOptions.color(Color.BLACK);
-                                blackPolylineOptions.width(5);
-                                blackPolylineOptions.startCap(new SquareCap());
-                                blackPolylineOptions.endCap(new SquareCap());
-                                blackPolylineOptions.jointType(JointType.ROUND);
-                                blackPolyline = mMap.addPolyline(blackPolylineOptions);
+                                JSONArray routes = jsonObject.getJSONArray("routes");
 
-                                mMap.addMarker(new MarkerOptions()
-                                        .position(polyLineList.get(polyLineList.size()-1))
-                                        .title("Pick up Location"));
+                                //gets the first object (index 0)
+                                JSONObject object = routes.getJSONObject(0);
 
-                                //Animation
-                                ValueAnimator polyLineAnimator = ValueAnimator.ofInt(0,100);
-                                polyLineAnimator.setDuration(2000);
-                                polyLineAnimator.setInterpolator(new LinearInterpolator());
-                                polyLineAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                                    @Override
-                                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                                        List<LatLng> points = greyPolyline.getPoints();
-                                        int percentValue = (int)valueAnimator.getAnimatedValue();
-                                        int size = points.size();
-                                        int newPoints = (int) (size * (percentValue/100.0f));
-                                        List<LatLng> p = points.subList(0, newPoints);
-                                        blackPolyline.setPoints(p);
-                                    }
-                                });
+                                //now getting into array named legs
+                                JSONArray legs = object.getJSONArray("legs");
 
-                                polyLineAnimator.start();
+                                //here again i need the first object
+                                JSONObject legsObject = legs.getJSONObject(0);
 
-                                ambulanceMarker = mMap.addMarker(new MarkerOptions().position(currentPosition)
-                                        .flat(true)
-                                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.ambulance)));
+                                //Get distance from legs
+                                JSONObject distance = legsObject.getJSONObject("distance");
+                                txt_distance.setText(distance.getString("text"));
 
-                                handler = new Handler();
-                                index = -1;
-                                next = 1;
-                                handler.postDelayed(drawPathRunnable, 3000);
+                                //Get the Duration/ time
+                                JSONObject time = legsObject.getJSONObject("duration");
+                                txt_time.setText(time.getString("text"));
 
+                                //Get the address
+                                String address = legsObject.getString("end_address");
+                                txt_address.setText(time.getString("text"));
 
 
                             } catch (JSONException e) {
@@ -154,7 +103,7 @@ public class VictimCall extends AppCompatActivity {
 
                         @Override
                         public void onFailure(Call<String> call, Throwable t) {
-                            Toast.makeText(welcome.this, ""+t.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(VictimCall.this, ""+t.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
 
@@ -162,5 +111,23 @@ public class VictimCall extends AppCompatActivity {
         {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    protected void onStop() {
+        mediaPlayer.release();
+        super.onStop();
+    }
+
+    @Override
+    protected void onPause() {
+        mediaPlayer.release();
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mediaPlayer.start();
     }
 }

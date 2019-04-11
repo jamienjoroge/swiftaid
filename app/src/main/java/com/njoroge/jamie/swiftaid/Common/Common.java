@@ -1,5 +1,7 @@
 package com.njoroge.jamie.swiftaid.Common;
 
+import android.location.Location;
+
 import com.njoroge.jamie.swiftaid.Remote.FCMClient;
 import com.njoroge.jamie.swiftaid.Remote.IFCMService;
 import com.njoroge.jamie.swiftaid.Remote.IGoogleApi;
@@ -12,6 +14,8 @@ public class Common {
     public static final String user_victim_table = "VictimsInformation";
     public static final String request_pickup_tbl = "PickupRequest";
     public static final String token_tbl = "Tokens";
+
+    public static Location mLastLocation = null;
 
     public static final String baseURL = "https://maps.googleapis.com";
     public static final String fcmURL = "https://fcm.googleapis.com/";
